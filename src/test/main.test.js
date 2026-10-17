@@ -19,7 +19,13 @@ const fixture = () => {
     <main>
       <section id="top">
         <div class="absolute top-24 right-6 lg:right-10 z-20 hidden md:block">
-          <span>Ouvert</span><span>Sans rendez-vous — passez maintenant</span>
+          <div class="flex items-center gap-3 rounded-full border border-white/15 bg-white/5 backdrop-blur-md px-4 py-2.5">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping bg-emerald-400"></span>
+              <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+            </span>
+            <div class="leading-tight"><p>Ouvert</p><p>Sans rendez-vous — passez maintenant</p></div>
+          </div>
         </div>
       </section>
       <header>
@@ -110,6 +116,8 @@ describe('interactions du site', () => {
   });
 
   it('affiche le badge sur mobile, le masque au défilement et le garde dans Nous trouver', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-20T10:00:00')); // mardi, ouvert
     await loadInteractions();
     const heroBadge = document.querySelector('[data-status-badge="hero"]');
     const contactBadge = document.querySelector('[data-status-badge="contact"]');
@@ -129,6 +137,66 @@ describe('interactions du site', () => {
     window.dispatchEvent(new Event('scroll'));
     expect(heroBadge.style.opacity).toBe('1');
     expect(heroBadge.getAttribute('aria-hidden')).toBe('false');
+  });
+
+  it('met à jour les deux badges selon les horaires et ferme samedi à 18 h 08', async () => {
+    vi.useFakeTimers();
+    const scenarios = [
+      ['2026-10-17T18:08:00', false], // samedi après fermeture (17 h 30)
+      ['2026-10-18T12:00:00', false], // dimanche fermé
+      ['2026-10-19T09:00:00', false], // lundi fermé
+      ['2026-10-20T08:59:00', false], // avant ouverture
+      ['2026-10-20T09:00:00', true],
+      ['2026-10-20T17:59:00', true],
+      ['2026-10-20T18:00:00', false],
+      ['2026-10-21T17:59:00', true],
+      ['2026-10-22T17:59:00', true],
+      ['2026-10-22T18:00:00', false],
+      ['2026-10-23T18:59:00', true],
+      ['2026-10-23T19:00:00', false],
+      ['2026-10-17T17:29:00', true],
+      ['2026-10-17T17:30:00', false],
+    ];
+    vi.setSystemTime(new Date(scenarios[0][0]));
+    await loadInteractions();
+
+    const badges = [
+      document.querySelector('[data-status-badge="hero"]'),
+      document.querySelector('[data-status-badge="contact"]'),
+    ];
+    expect(badges.every(Boolean)).toBe(true);
+
+    for (const [time, isOpen] of scenarios) {
+      vi.setSystemTime(new Date(time));
+      window.dispatchEvent(new Event('focus'));
+
+      badges.forEach((badge) => {
+        const [title, subtitle] = badge.querySelectorAll('.leading-tight p');
+        const [pulse, dot] = badge.querySelector('.relative.flex').children;
+        expect(badge.dataset.statusState, `état du badge à ${time}`).toBe(isOpen ? 'open' : 'closed');
+        expect(title.textContent).toBe(isOpen ? 'OUVERT' : 'FERMÉ');
+        expect(subtitle.textContent).toBe(
+          isOpen ? 'Sans rendez-vous — passez maintenant' : 'Passez plus tard',
+        );
+        expect(pulse.hidden).toBe(!isOpen);
+        expect(pulse.classList.contains('animate-ping')).toBe(isOpen);
+        expect(dot.classList.contains('bg-emerald-400')).toBe(isOpen);
+        expect(dot.classList.contains('bg-red-500')).toBe(!isOpen);
+        expect(dot.style.backgroundColor).toBe(isOpen ? '' : 'rgb(239, 68, 68)');
+      });
+    }
+  });
+
+  it('réévalue le badge automatiquement à l’heure de fermeture', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-17T17:29:00'));
+    await loadInteractions();
+    const heroBadge = document.querySelector('[data-status-badge="hero"]');
+    expect(heroBadge.dataset.statusState).toBe('open');
+
+    vi.advanceTimersByTime(60_000);
+    expect(heroBadge.dataset.statusState).toBe('closed');
+    expect(heroBadge.querySelector('.leading-tight p').textContent).toBe('FERMÉ');
   });
 
   it('place AUJOURD’HUI sur le jour donné par Date.getDay()', async () => {

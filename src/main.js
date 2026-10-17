@@ -134,6 +134,61 @@ function initOpeningStatus() {
 
   window.addEventListener('scroll', updateVisibility, { passive: true });
   updateVisibility();
+
+  const openingWindows = {
+    2: [9 * 60, 18 * 60],
+    3: [9 * 60, 18 * 60],
+    4: [9 * 60, 18 * 60],
+    5: [9 * 60, 19 * 60],
+    6: [9 * 60, 17 * 60 + 30],
+  };
+  const statusBadges = [...document.querySelectorAll('[data-status-badge]')];
+
+  const updateStatus = () => {
+    const now = new Date();
+    const openingWindow = openingWindows[now.getDay()];
+    const minuteOfDay = now.getHours() * 60 + now.getMinutes();
+    const isOpen = Boolean(
+      openingWindow && minuteOfDay >= openingWindow[0] && minuteOfDay < openingWindow[1],
+    );
+
+    statusBadges.forEach((statusBadge) => {
+      const copy = statusBadge.querySelector('.leading-tight');
+      const [title, subtitle] = copy?.querySelectorAll('p') ?? [];
+      const indicator = statusBadge.querySelector('.relative.flex');
+      const [pulse, dot] = indicator ? [...indicator.children] : [];
+
+      if (title) title.textContent = isOpen ? 'OUVERT' : 'FERMÉ';
+      if (subtitle) {
+        subtitle.textContent = isOpen
+          ? 'Sans rendez-vous — passez maintenant'
+          : 'Passez plus tard';
+      }
+
+      statusBadge.dataset.statusState = isOpen ? 'open' : 'closed';
+      statusBadge.setAttribute('aria-label', isOpen
+        ? 'Ouvert. Sans rendez-vous — passez maintenant.'
+        : 'Fermé. Passez plus tard.');
+
+      if (pulse) {
+        pulse.hidden = !isOpen;
+        pulse.classList.toggle('animate-ping', isOpen);
+        pulse.classList.toggle('bg-emerald-400', isOpen);
+      }
+      if (dot) {
+        dot.classList.toggle('bg-emerald-400', isOpen);
+        dot.classList.toggle('bg-red-500', !isOpen);
+        dot.style.backgroundColor = isOpen ? '' : '#ef4444';
+      }
+    });
+  };
+
+  updateStatus();
+  window.setInterval(updateStatus, 60_000);
+  window.addEventListener('focus', updateStatus);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) updateStatus();
+  });
 }
 
 function initTodaySchedule() {
