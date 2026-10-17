@@ -104,6 +104,126 @@ function initMobileMenu() {
   });
 }
 
+function initOpeningStatus() {
+  const badge = document.querySelector('#top .absolute.top-24.right-6');
+  if (!badge) return;
+
+  badge.dataset.statusBadge = 'hero';
+  badge.classList.remove('hidden');
+
+  const contactColumn = document.querySelector('#contact > div > div > div');
+  if (contactColumn && !contactColumn.querySelector('[data-status-badge="contact"]')) {
+    const contactBadge = badge.cloneNode(true);
+    contactBadge.dataset.statusBadge = 'contact';
+    contactBadge.classList.remove('absolute', 'top-24', 'right-6', 'lg:right-10', 'z-20', 'md:block');
+    contactBadge.classList.add('relative', 'inline-block', 'mb-6');
+    contactBadge.removeAttribute('aria-hidden');
+    contactBadge.removeAttribute('id');
+    contactBadge.querySelectorAll('[id]').forEach((element) => element.removeAttribute('id'));
+    contactColumn.querySelector('h2')?.after(contactBadge);
+  }
+
+  badge.style.transition = 'opacity 220ms ease, transform 220ms ease';
+  const updateVisibility = () => {
+    const atTop = window.scrollY <= 24;
+    badge.style.opacity = atTop ? '1' : '0';
+    badge.style.transform = atTop ? 'translateY(0)' : 'translateY(-8px)';
+    badge.style.pointerEvents = atTop ? '' : 'none';
+    badge.setAttribute('aria-hidden', String(!atTop));
+  };
+
+  window.addEventListener('scroll', updateVisibility, { passive: true });
+  updateVisibility();
+}
+
+function initTodaySchedule() {
+  const schedule = document.querySelector('#horaires');
+  const rows = [...(schedule?.querySelectorAll('li') ?? [])];
+  if (rows.length === 0) return;
+
+  // The displayed list starts on Monday, while Date.getDay() starts on Sunday.
+  const weekdaysInListOrder = [1, 2, 3, 4, 5, 6, 0];
+  rows.forEach((row, index) => {
+    if (!row.dataset.weekday) row.dataset.weekday = String(weekdaysInListOrder[index] ?? index);
+  });
+
+  const todayNumber = new Date().getDay();
+  const todayRow = rows.find((row) => Number(row.dataset.weekday) === todayNumber);
+  if (!todayRow) return;
+
+  let todayBadge = schedule.querySelector('[data-today-badge]');
+  if (!todayBadge) {
+    todayBadge = [...schedule.querySelectorAll('span')].find(
+      (element) => element.textContent.trim().toLocaleLowerCase('fr') === "aujourd'hui",
+    );
+  }
+
+  rows.forEach((row) => {
+    row.classList.remove('border-[#d92626]', 'bg-[#d92626]/10');
+    row.classList.add('border-white/10');
+  });
+  todayRow.classList.remove('border-white/10');
+  todayRow.classList.add('border-[#d92626]', 'bg-[#d92626]/10');
+
+  if (todayBadge) {
+    todayBadge.dataset.todayBadge = '';
+    const dayLabel = todayRow.querySelector('span.flex.items-center.gap-2') ?? todayRow.firstElementChild;
+    dayLabel?.append(document.createTextNode(' '), todayBadge);
+  }
+}
+
+function initReviewStars() {
+  const summaryStars = document.querySelectorAll(
+    '#avis .mt-5.flex.items-center.justify-center.gap-2 svg.lucide-star',
+  );
+  summaryStars.forEach((star) => {
+    star.style.color = '#D92626';
+    star.style.fill = '#D92626';
+  });
+
+  const reviewCards = [...document.querySelectorAll('#avis figure')];
+  reviewCards.forEach((card) => {
+    card.querySelectorAll('svg.lucide-star').forEach((star) => {
+      star.style.color = '#1B4DC4';
+      star.style.fill = '#1B4DC4';
+    });
+  });
+
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const revealStars = (card) => {
+    if (reducedMotion || typeof Element.prototype.animate !== 'function') return;
+    [...card.querySelectorAll('svg.lucide-star')].forEach((star, index) => {
+      star.animate(
+        [
+          { opacity: 0, transform: 'scale(0.55) rotate(-18deg)' },
+          { opacity: 1, transform: 'scale(1) rotate(0deg)' },
+        ],
+        {
+          duration: 420,
+          delay: index * 65,
+          easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          fill: 'both',
+        },
+      );
+    });
+  };
+
+  if (reviewCards.length === 0) return;
+  if (!('IntersectionObserver' in window)) {
+    reviewCards.forEach(revealStars);
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      observer.unobserve(entry.target);
+      revealStars(entry.target);
+    });
+  }, { threshold: 0.2 });
+  reviewCards.forEach((card) => observer.observe(card));
+}
+
 function initPriceAccordion() {
   const buttons = [...document.querySelectorAll('#tarifs button')];
   if (buttons.length === 0) return;
@@ -202,5 +322,8 @@ function initScrollReveals() {
 
 initLegalModal();
 initMobileMenu();
+initOpeningStatus();
+initTodaySchedule();
+initReviewStars();
 initPriceAccordion();
 initScrollReveals();
