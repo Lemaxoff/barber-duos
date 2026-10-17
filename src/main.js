@@ -159,11 +159,19 @@ function initTodaySchedule() {
   }
 
   rows.forEach((row) => {
-    row.classList.remove('border-[#d92626]', 'bg-[#d92626]/10');
+    [...row.classList].forEach((className) => {
+      const isHaloClass = /^(?:glow|shadow|ring|drop-shadow)(?:-|:|\[|$)/i.test(className);
+      const isRedBorderOrFill = /^(?:border|bg|outline)(?:-|:|\[)/i.test(className)
+        && /(?:red|#d92626|217[_ ,]+38[_ ,]+38)/i.test(className);
+      if (isHaloClass || isRedBorderOrFill) row.classList.remove(className);
+    });
     row.classList.add('border-white/10');
+    row.style.boxShadow = '';
+    row.style.filter = '';
   });
   todayRow.classList.remove('border-white/10');
   todayRow.classList.add('border-[#d92626]', 'bg-[#d92626]/10');
+  todayRow.style.boxShadow = '0 0 18px rgba(217, 38, 38, 0.22)';
 
   if (todayBadge) {
     todayBadge.dataset.todayBadge = '';
@@ -173,19 +181,25 @@ function initTodaySchedule() {
 }
 
 function initReviewStars() {
+  const setStarColor = (star, color) => {
+    star.setAttribute('fill', color);
+    star.setAttribute('stroke', color);
+    star.style.setProperty('fill', color);
+    star.style.setProperty('stroke', color);
+    star.style.setProperty('color', color);
+  };
+
   const summaryStars = document.querySelectorAll(
     '#avis .mt-5.flex.items-center.justify-center.gap-2 svg.lucide-star',
   );
   summaryStars.forEach((star) => {
-    star.style.color = '#D92626';
-    star.style.fill = '#D92626';
+    setStarColor(star, '#D92626');
   });
 
   const reviewCards = [...document.querySelectorAll('#avis figure')];
   reviewCards.forEach((card) => {
     card.querySelectorAll('svg.lucide-star').forEach((star) => {
-      star.style.color = '#1B4DC4';
-      star.style.fill = '#1B4DC4';
+      setStarColor(star, '#1B4DC4');
     });
   });
 
