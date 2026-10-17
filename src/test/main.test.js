@@ -9,7 +9,7 @@ const fixture = () => {
       ? 'border-[#d92626] bg-[#d92626]/10 shadow-[0_0_20px_rgba(217,38,38,0.22)] ring-red-500/20 glow-red'
       : 'border-white/10';
     return `
-    <li class="flex items-center justify-between gap-2 py-3 px-3 sm:px-5 rounded-xl border ${highlight}">
+    <li class="flex items-center justify-between gap-2 py-3 px-3 sm:px-5 rounded-xl border ${highlight}" style="${day === 'Jeudi' ? 'animation: 2.2s ease-in-out infinite redPulse;' : ''}">
       <span class="flex items-center gap-2 min-w-0">${day}${day === 'Jeudi' ? ' <span class="today-pill">Aujourd\'hui</span>' : ''}</span>
       <span class="text-sm sm:text-lg font-mono whitespace-nowrap text-[#F4F4F5]">9h – 18h</span>
     </li>`;
@@ -40,12 +40,12 @@ const fixture = () => {
       <section id="avis">
         <div class="text-center mb-14">
           <div class="mt-5 flex items-center justify-center gap-2">
-            ${Array.from({ length: 5 }, () => '<span><svg class="lucide lucide-star"></svg></span>').join('')}
+            ${Array.from({ length: 5 }, () => '<span style="opacity: 0.15; transform: scale(0.6);"><svg class="lucide lucide-star"></svg></span>').join('')}
             <span>5,0 · recommandés</span>
           </div>
         </div>
         <figure><div class="flex items-center gap-1">
-          ${Array.from({ length: 5 }, () => '<span><svg class="lucide lucide-star"></svg></span>').join('')}
+          ${Array.from({ length: 5 }, () => '<span style="opacity: 0.15; transform: scale(0.6);"><svg class="lucide lucide-star"></svg></span>').join('')}
         </div></figure>
       </section>
       <button data-legal-open>Mentions légales &amp; Confidentialité</button>
@@ -144,7 +144,9 @@ describe('interactions du site', () => {
     expect(today.classList.contains('border-[#d92626]')).toBe(true);
     expect(formerThursday.classList.contains('border-[#d92626]')).toBe(false);
     expect(today.style.boxShadow).toContain('217, 38, 38');
+    expect(today.style.animation).toContain('barberDuosRedPulse');
     expect(formerThursday.style.boxShadow).toBe('');
+    expect(formerThursday.style.animation).toBe('');
     expect([...formerThursday.classList].some((name) => /^(?:glow|shadow|ring|drop-shadow)/i.test(name))).toBe(false);
     expect(formerThursday.classList.contains('bg-[#d92626]/10')).toBe(false);
   });
@@ -163,12 +165,16 @@ describe('interactions du site', () => {
       expect(star.style.fill).toBe('#D92626');
       expect(star.getAttribute('fill')).toBe('#D92626');
       expect(star.getAttribute('stroke')).toBe('#D92626');
+      expect(star.parentElement.style.opacity).toBe('1');
+      expect(star.parentElement.style.transform).toBe('scale(1)');
     });
     cardStars.forEach((star) => {
       expect(star.style.color).toBe('rgb(27, 77, 196)');
       expect(star.style.fill).toBe('#1B4DC4');
       expect(star.getAttribute('fill')).toBe('#1B4DC4');
       expect(star.getAttribute('stroke')).toBe('#1B4DC4');
+      expect(star.parentElement.style.opacity).toBe('1');
+      expect(star.parentElement.style.transform).toBe('scale(1)');
     });
     expect(animate).toHaveBeenCalledTimes(5);
     expect(animate.mock.calls[4][1].delay).toBe(260);

@@ -151,6 +151,14 @@ function initTodaySchedule() {
   const todayRow = rows.find((row) => Number(row.dataset.weekday) === todayNumber);
   if (!todayRow) return;
 
+  const pulseStyleId = 'barber-duos-red-pulse-keyframes';
+  if (!document.getElementById(pulseStyleId)) {
+    const pulseStyle = document.createElement('style');
+    pulseStyle.id = pulseStyleId;
+    pulseStyle.textContent = '@keyframes barberDuosRedPulse { 0%, 100% { box-shadow: 0 0 12px rgba(217,38,38,.18); } 50% { box-shadow: 0 0 22px rgba(217,38,38,.38); } }';
+    document.head.append(pulseStyle);
+  }
+
   let todayBadge = schedule.querySelector('[data-today-badge]');
   if (!todayBadge) {
     todayBadge = [...schedule.querySelectorAll('span')].find(
@@ -168,10 +176,14 @@ function initTodaySchedule() {
     row.classList.add('border-white/10');
     row.style.boxShadow = '';
     row.style.filter = '';
+    row.style.animation = '';
   });
   todayRow.classList.remove('border-white/10');
   todayRow.classList.add('border-[#d92626]', 'bg-[#d92626]/10');
   todayRow.style.boxShadow = '0 0 18px rgba(217, 38, 38, 0.22)';
+  todayRow.style.animation = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ? ''
+    : 'barberDuosRedPulse 2.2s ease-in-out infinite';
 
   if (todayBadge) {
     todayBadge.dataset.todayBadge = '';
@@ -182,6 +194,11 @@ function initTodaySchedule() {
 
 function initReviewStars() {
   const setStarColor = (star, color) => {
+    const wrapper = star.closest('span');
+    if (wrapper) {
+      wrapper.style.opacity = '1';
+      wrapper.style.transform = 'scale(1)';
+    }
     star.setAttribute('fill', color);
     star.setAttribute('stroke', color);
     star.style.setProperty('fill', color);
